@@ -1,0 +1,14 @@
+{
+  "name": "webrtc-poc",
+  "version": "1.0.0",
+  "description": "1 對 1 視訊通話 WebRTC POC（Express 靜態服務 + ws 信令伺服器 + 原生前端）",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.1"
+  }
+}
