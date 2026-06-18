@@ -1,0 +1,7 @@
+# 相依套件（用 npm install 還原即可，不進版控）
+node_modules/
+
+# 紀錄與環境
+*.log
+.env
+.DS_Store

@@ -1,0 +1,14 @@
+{
+  "name": "webrtc-poc-phase2",
+  "version": "1.0.0",
+  "description": "Phase 2：多人 mesh 視訊 + DataChannel 聊天 + 螢幕分享（Node + ws + 原生前端）",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.1"
+  }
+}
