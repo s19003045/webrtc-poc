@@ -106,8 +106,36 @@ function ensureRemoteVideo(peerId) {
 
 function removeRemoteVideo(peerId) {
   const box = document.getElementById('box-' + peerId);
-  if (box) box.remove();
+  if (box) {
+    // 若離開者正被聚焦，順手還原成格狀版面
+    if (box.classList.contains('spotlight')) videosEl.classList.remove('has-spotlight');
+    box.remove();
+  }
 }
+
+// ── Spotlight：點選某人放到最大，再點一次還原；雙擊進原生全螢幕 ──
+// 用事件委派掛在容器上，動態新增的視訊格也一併適用。
+videosEl.addEventListener('click', (e) => {
+  const box = e.target.closest('.video-box');
+  if (!box) return;
+  const wasSpotlight = box.classList.contains('spotlight');
+  // 先清掉舊的聚焦，確保同時只有一個人被放大
+  videosEl.querySelectorAll('.video-box.spotlight').forEach((b) => b.classList.remove('spotlight'));
+  if (wasSpotlight) {
+    videosEl.classList.remove('has-spotlight'); // 點同一個 → 還原
+  } else {
+    box.classList.add('spotlight');
+    videosEl.classList.add('has-spotlight');
+  }
+});
+
+videosEl.addEventListener('dblclick', (e) => {
+  const video = e.target.closest('.video-box')?.querySelector('video');
+  if (!video) return;
+  // 用瀏覽器原生 Fullscreen API 把該畫面填滿整個螢幕
+  if (document.fullscreenElement) document.exitFullscreen();
+  else video.requestFullscreen?.();
+});
 
 // ── 步驟 1：拿到自己的鏡頭畫面 ───────────────────────────────────────────────
 async function startLocalMedia() {

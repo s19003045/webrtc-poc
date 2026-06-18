@@ -85,6 +85,7 @@ button.active { background: var(--warn); color: #1a1d29; }
   border-radius: 12px;
   overflow: hidden;
   aspect-ratio: 4 / 3;
+  cursor: pointer; /* 提示可點選放大 */
 }
 .video-box video { width: 100%; height: 100%; object-fit: cover; }
 .video-box .label {
@@ -95,6 +96,22 @@ button.active { background: var(--warn); color: #1a1d29; }
   background: rgba(0, 0, 0, 0.5);
   padding: 2px 8px;
   border-radius: 6px;
+}
+
+/* ── Spotlight：點選某人放到最大 ──
+   被聚焦者橫跨整列、加高比例並排到最前；其餘縮成小縮圖 */
+.videos.has-spotlight .video-box {
+  aspect-ratio: 4 / 3;
+}
+.videos.has-spotlight .video-box.spotlight {
+  grid-column: 1 / -1;     /* 佔滿整個寬度 */
+  aspect-ratio: 16 / 9;    /* 放大為主畫面比例 */
+  max-height: 70vh;
+  order: -1;               /* 排到最上方 */
+}
+.videos.has-spotlight .video-box.spotlight video {
+  object-fit: contain;     /* 主畫面顯示完整影像，不裁切 */
+  background: #000;
 }
 
 /* ── 側欄：成員 + 聊天 ── */
