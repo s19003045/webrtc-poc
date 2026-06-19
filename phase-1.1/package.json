@@ -1,0 +1,10 @@
+{
+  "name": "webrtc-poc-phase1-1",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Phase 1.1：Firestore 信令版 1 對 1 WebRTC 視訊通話 POC",
+  "scripts": {
+    "start": "python3 -m http.server ${PORT:-3000} --directory public",
+    "dev": "npm start"
+  }
+}

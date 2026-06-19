@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebRTC Phase 1.1 — Firestore 信令</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>WebRTC Phase 1.1 — Firestore 信令</h1>
+    <p class="hint">不啟動自架信令伺服器；Firestore 只交換 offer / answer / ICE，影音仍是瀏覽器 P2P。</p>
+  </header>
+
+  <section class="controls">
+    <input id="room" type="text" placeholder="房間名稱（例如 test）" value="test" />
+    <button id="joinBtn">加入通話</button>
+    <button id="hangupBtn" disabled>掛斷</button>
+    <button id="resetBtn" type="button">清理房間資料</button>
+    <span id="status" class="status">尚未連線</span>
+  </section>
+
+  <p id="configHint" class="config-hint">
+    請先複製 <code>firebase-config.example.js</code> 為 <code>firebase-config.js</code> 並填入 Firebase Web app config。
+  </p>
+
+  <section class="videos">
+    <div class="video-box">
+      <video id="localVideo" autoplay playsinline muted></video>
+      <span class="label">我（本機）</span>
+    </div>
+    <div class="video-box">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <span class="label">對方（遠端）</span>
+    </div>
+  </section>
+
+  <section class="log">
+    <h2>連線流程紀錄</h2>
+    <pre id="log"></pre>
+  </section>
+
+  <script type="module" src="client.js"></script>
+</body>
+</html>

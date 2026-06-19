@@ -5,6 +5,7 @@
 This repository is a staged WebRTC proof of concept. Each `phase-*` directory is mostly self-contained:
 
 - `phase-1/`: 1:1 WebRTC call with an Express static server, `ws` signaling, and vanilla assets in `public/`.
+- `phase-1.1/`: 1:1 WebRTC call with Firestore replacing the custom signaling server.
 - `phase-2/`: multi-user mesh calling, DataChannel chat, and screen sharing.
 - `phase-3/`: React + TypeScript + Vite client in `client/`, with the Node signaling server in `server/`.
 - `phase-4/`: Go signaling server in `server/`, reusing the Phase 3 React client.
@@ -15,6 +16,7 @@ Root `docker-compose.yml` and `DOCKER.md` cover containerized runs.
 ## Build, Test, and Development Commands
 
 - `cd phase-1 && npm install && npm start`: run the 1:1 Node demo.
+- `cd phase-1.1 && npm start`: serve the Firestore signaling demo.
 - `cd phase-2 && npm install && npm start`: run the mesh demo.
 - `cd phase-3/server && npm start`, plus `cd phase-3/client && npm run dev`: run Phase 3.
 - `cd phase-3/client && npm run build`: type-check and build React.

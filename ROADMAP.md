@@ -27,6 +27,17 @@
 
 ---
 
+## Phase 1.1 — Firestore 信令替代版 ✅（已完成）
+
+> 資料夾：`phase-1.1/`　技術：Cloud Firestore + 原生前端
+
+- 保留 Phase 1 的 1:1 P2P WebRTC 流程
+- 用 Firestore 文件與子集合取代自架 WebSocket signaling server
+- 交換資料仍只有 SDP offer/answer 與 ICE candidate，影音不經過 Firestore
+- **產出**：不維護 signaling server 也能完成初始交握的教學版 POC
+
+---
+
 ## Phase 2 — 多人 Mesh + 體驗強化 ✅（已完成）
 
 > 資料夾：`phase-2/`　技術：沿用 Node + 原生前端（刻意先不換棧，專注在 WebRTC 本身）
