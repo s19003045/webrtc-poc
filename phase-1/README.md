@@ -45,6 +45,16 @@ B: setRemote(answer)
 | `public/client.js` | 前端 WebRTC 核心邏輯（getUserMedia / RTCPeerConnection / SDP / ICE） |
 | `public/style.css` | 樣式 |
 
+## 限制、痛點與解法
+
+| 項目 | 限制 / 痛點 | 解決方案 |
+|------|-------------|----------|
+| 房間人數 | 每房只支援 2 人；第三人加入會被拒絕。 | 多人需求改成 Phase 2 的 peer ID + mesh 信令；更大規模改用 Phase 5 SFU。 |
+| NAT 穿透 | 只設定公開 STUN；嚴格 NAT、企業網路或跨國網路可能無法 P2P 連線。 | 正式環境補上 TURN（例如 coturn），並用 HTTPS 提供頁面。 |
+| 信令完整度 | 伺服器只做最小轉發，沒有登入、重連、房間保護或長連線心跳。 | 加入 session / auth、ping-pong 健康檢查、斷線清理與可重入的 join 流程。 |
+| 協商順序 | offer / answer / ICE 都是非同步；ICE 可能比 remote description 更早到。 | 前端維持 ICE candidate 佇列，等 `setRemoteDescription` 完成後再補上。 |
+| 協商衝突 | 固定第二位加入者發 offer，避開初始 glare，但無法處理雙方同時重新協商。 | 後續功能需導入 Perfect Negotiation、rollback，或使用 `replaceTrack` 減少重新協商。 |
+
 ## 下一步可以延伸的方向
 
 - **TURN 伺服器**（如 coturn）：跨網際網路、嚴格 NAT 連不上時的中繼。

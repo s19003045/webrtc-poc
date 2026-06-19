@@ -67,6 +67,16 @@ cd ../server && npm start       # 由信令伺服器直接服務 dist
 | UI | 手動 DOM 操作 | 元件化、狀態驅動渲染 |
 | 後端 | Node + ws | **相同**（沿用） |
 
+## 限制、痛點與解法
+
+| 項目 | 限制 / 痛點 | 解決方案 |
+|------|-------------|----------|
+| 架構上限 | 前端現代化後，底層仍是 Phase 2 mesh；人數與頻寬限制沒有消失。 | 保留同一套功能作為對照；擴展性問題留到 Phase 5 用 SFU 解決。 |
+| React 副作用 | `RTCPeerConnection`、WebSocket、MediaStream 都是命令式物件，直接放進 component 會造成重渲染與清理困難。 | 用 `PeerManager` 封裝副作用，hooks 只訂閱狀態變化，元件維持宣告式 UI。 |
+| 型別邊界 | 信令訊息是 JSON，容易出現 `type` 寫錯、payload 缺欄位或資料形狀不一致。 | 在 `types.ts` 定義協議型別，讓 `PeerManager` 與 hooks 共用同一套 TypeScript contract。 |
+| 開發流程 | 前後端拆成兩個 dev server，WebSocket URL 與正式模式路徑容易不一致。 | Vite 用 `/ws` proxy 到 `:3000`；正式模式由 Node server 服務 `client/dist`。 |
+| 資源生命週期 | React unmount、離房、關分頁都可能留下未停止的 tracks 或未關閉的 peer connection。 | 在 hooks 與 `PeerManager.leave()` 中集中停止 tracks、關閉 PC / DataChannel、重設狀態。 |
+
 ## 下一步（Phase 4）
 
 後端改用 **Golang** 重寫信令伺服器，前端維持本階段成果。

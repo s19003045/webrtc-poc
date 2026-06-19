@@ -71,6 +71,17 @@ cd ../server && go run .          # 預設服務 ../client/dist
 
 > 早期版本因為協商邏輯（沿用 Pion 範例）有缺陷，人一多就會讓「最後加入者」被前面忙碌的 peer 餓死、拿到 0 條 track（俗稱「第 6 人只看到自己」）。已改寫 `signalPeerConnections` → `syncPeer`/`onAnswer`：跳過正在協商中的 peer（而非整個迴圈重來）、且只在 track 真的變動時才重新協商。見 `TestSFUManyClients` 回歸測試。
 
+## 限制、痛點與解法
+
+| 項目 | 限制 / 痛點 | 解決方案 |
+|------|-------------|----------|
+| SFU 功能範圍 | 目前是教學型最小 SFU，沒有 simulcast / SVC、錄影、權限控管、房間密碼或多節點路由。 | 生產化需補 auth、房間 ACL、媒體層級選擇、監控；大規模可評估 LiveKit 等成熟 SFU。 |
+| 伺服器成本 | client 只上傳一路，但 SFU 仍要轉發大量 RTP；單房下載總量仍接近 O(N²)。 | 限制單房人數與解析度，加入頻寬估測、simulcast layer 選擇，並以多 SFU 節點水平擴展。 |
+| WebRTC 角色翻轉 | 伺服器開始終結 PeerConnection，必須處理 offer / answer、ICE、track 與重新協商。 | 採「SFU 當 offerer、client 回 answer」的單一路徑，前端 `SfuClient` 只維護一條 PC。 |
+| track 轉發 | 需要把每個上傳 track 轉給其他人，但不能把自己的 track 送回自己。 | 用 `TrackLocalStaticRTP` 做轉發端，並以 senders / receivers 的 track ID 判斷已存在與自有 track。 |
+| 重協商風暴 | 多人加入或 track 變動時，協商中的 peer 可能阻塞整個房間，造成晚加入者看不到畫面。 | `syncPeer` 只同步需要更新的 peer；`onAnswer` 後再續跑同步，並以 `TestSFUManyClients` 防回歸。 |
+| Docker / NAT | SFU 需要對外交換 UDP RTP，容器內 IP 或隨機 UDP 埠會讓瀏覽器連不上媒體。 | 使用固定 `UDP_PORT` 與 `NAT1TO1_IP`，在 compose 中發布 HTTP 與 UDP 媒體埠。 |
+
 ## 驗證
 
 - 整合測試：`cd server && go test -v`

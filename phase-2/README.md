@@ -43,6 +43,16 @@ npm start
 
 這就是 mesh 無法擴展到數千人的根本原因，也是後續 **Phase 5 改用 SFU** 的動機：改成每人只上傳「一路」到伺服器轉發。
 
+## 限制、痛點與解法
+
+| 項目 | 限制 / 痛點 | 解決方案 |
+|------|-------------|----------|
+| 擴展性 | full-mesh 讓每人上傳 N−1 份媒體，CPU、上傳頻寬與 PeerConnection 數都快速增加。 | 限制房間人數與解析度；真正的大房間改用 Phase 5 SFU，讓 client 只上傳一路。 |
+| 多連線狀態 | 每個 peer 都有自己的 PC、DataChannel、ICE 佇列與 media stream，清理不完整會殘留畫面或連線。 | 以 `Map<peerId, ...>` 管理所有資源；在 peer 離開時集中關閉 PC、移除 tracks、刪除 UI 狀態。 |
+| offer 衝突 | 多人同時進房時容易發生 glare 或重複協商。 | 採用「後加入者對既有成員發 offer」的 deterministic 規則；避免雙方同時建立 offer。 |
+| 螢幕分享 | 分享螢幕若重建連線，會讓所有 peer 重新協商，失敗面擴大。 | 使用 `RTCRtpSender.replaceTrack()` 替換已存在的 video track，降低協商成本。 |
+| 聊天傳遞 | DataChannel 是點對點；多人房內需要對每條 peer 連線各送一次訊息。 | 在 client 端 fan-out 到所有 DataChannel；若要歷史紀錄或離線訊息，需改由伺服器保存。 |
+
 ## TURN（跨網路時才需要）
 
 本機 / 區網用 STUN 即可。要跨網際網路、遇到嚴格 NAT 時，在 `public/client.js` 的 `rtcConfig.iceServers` 取消 TURN 範例的註解，並填入自架 [coturn](https://github.com/coturn/coturn) 的位址與帳密。本階段不含 coturn 的架設。
