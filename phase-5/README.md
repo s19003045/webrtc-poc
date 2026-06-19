@@ -71,6 +71,18 @@ cd ../server && go run .          # 預設服務 ../client/dist
 
 > 早期版本因為協商邏輯（沿用 Pion 範例）有缺陷，人一多就會讓「最後加入者」被前面忙碌的 peer 餓死、拿到 0 條 track（俗稱「第 6 人只看到自己」）。已改寫 `signalPeerConnections` → `syncPeer`/`onAnswer`：跳過正在協商中的 peer（而非整個迴圈重來）、且只在 track 真的變動時才重新協商。見 `TestSFUManyClients` 回歸測試。
 
+## 決策紀錄
+
+| 階段 | 痛點 | 決策 / 解法 |
+|------|------|------------|
+| SFU 從零或照範例 | 自己從頭寫 SFU 風險高、易踩雷。 | 以 Pion 官方 `sfu-ws` 範例為基礎，再自行加上多房間支援。 |
+| 協商模型翻轉 | mesh 是 client 當 offerer，但 SFU 要動態加 / 減轉發 track。 | 改成「伺服器當 offerer、client 只回 answer」，前端 `SfuClient` 大幅簡化（只維護一條 PC）。 |
+| 自建 vs LiveKit | 最終目標是數千人規模。 | 學習階段自建把原理吃透；規模化再評估直接採 LiveKit（記在決策點，見下方 Phase 6）。 |
+| 聊天功能 | DataChannel 聊天會分散 SFU 的焦點。 | 本階段先拿掉聊天，專注「媒體轉發」這個重點。 |
+| 怎麼驗證轉發 | 沒有瀏覽器自動化，難證明「媒體真的被轉發」。 | 用 Pion 寫兩個真實 WebRTC client 做整合測試；過程還抓到「測試 client 的 track ID 撞名」這個測試假象並修正。 |
+| 第 6 人看不到別人 | 沿用範例的協商：每次對「所有人」重發 offer，且遇到忙碌 peer 就讓整個迴圈重來 → 排最後的新加入者被餓死、拿 0 條 track。 | 重寫成 `syncPeer` / `onAnswer`：跳過協商中的 peer（不整個重來）、只在 track 真的變動時才重協商；加 `TestSFUManyClients` 防回歸。 |
+| Docker 化 SFU | SFU 要交換 UDP RTP，容器內 IP / 隨機 UDP 埠外部不可達。 | 先評估延後 → 改用固定 `UDP_PORT`（UDP Mux）+ `NAT1TO1_IP`，compose 發布 UDP 媒體埠，並以 6-client 測試驗證穿透。 |
+
 ## 限制、痛點與解法
 
 | 項目 | 限制 / 痛點 | 解決方案 |

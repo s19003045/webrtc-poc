@@ -67,6 +67,16 @@ cd ../server && npm start       # 由信令伺服器直接服務 dist
 | UI | 手動 DOM 操作 | 元件化、狀態驅動渲染 |
 | 後端 | Node + ws | **相同**（沿用） |
 
+## 決策紀錄
+
+| 階段 | 痛點 | 決策 / 解法 |
+|------|------|------------|
+| WebRTC 邏輯放哪 | `RTCPeerConnection` 是命令式、充滿副作用，直接塞進 component 會難維護、難清理。 | 抽成框架無關的 `PeerManager` class（= Phase 2 `client.js` 的型別化版），React 只訂閱它吐出的狀態。 |
+| hooks 怎麼切 | 原規劃要 `useSignaling` + `usePeerConnection` 兩個 hook。 | 合併成 `useRoom`：信令與 peer 管理高度耦合，硬拆反而更亂——刻意偏離原規劃。 |
+| 後端要不要動 | 想專注前端現代化。 | 後端完全沿用 Phase 2，一次只動一邊以降低風險。 |
+| dev 連線方式 | Vite(5173) 與後端(3000) 不同源，WS URL 容易寫死、且 dev / 正式模式不一致。 | Vite proxy `/ws` → `:3000`，前端一律用同源 `/ws`，dev 與正式一致。 |
+| StrictMode | dev 會 double-mount，擔心重複連線 / 重複取鏡頭。 | 保留 StrictMode：join 由按鈕觸發、effect 只做卸載清理，不受 double-mount 影響。 |
+
 ## 限制、痛點與解法
 
 | 項目 | 限制 / 痛點 | 解決方案 |

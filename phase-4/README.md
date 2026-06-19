@@ -67,6 +67,17 @@ cd ../../phase-4/server && go run .         # 預設服務 ../../phase-3/client/
 | 心跳 | 無 | ping/pong 偵測死連線 |
 | 前端 | React + TS | **相同**（沿用） |
 
+## 決策紀錄
+
+| 階段 | 痛點 | 決策 / 解法 |
+|------|------|------------|
+| 沒有 Go 環境 | 系統未安裝 Go，又沒有免密碼 sudo 可裝。 | 下載 Go 工具鏈解壓到 `~/.local/go`（使用者空間，不需 sudo、不污染專案、不進版控）。 |
+| WebSocket 函式庫 | gorilla/websocket vs coder/websocket。 | 選 gorilla（最普及、範例多、長期穩定）。 |
+| 產生 peer ID | 是否引入 google/uuid。 | 用標準庫 `crypto/rand`，少一個相依。 |
+| 房間狀態併發 | 多連線同時 join / signal / leave，直接操作 `rooms` map 需大量加鎖。 | 單一 Hub goroutine 擁有狀態、用 channel 序列化處理，免 mutex（share memory by communicating）。 |
+| 空 peers 陣列 | Go 的 `omitempty` 把空 slice「整個欄位省略」，前端對 `undefined` 迭代直接崩潰。 | 先試「拿掉 omitempty」→ 但每則 signal 都會帶 `peers:null`（ICE 很頻繁，浪費）→ 改用獨立的 `Joined` struct，只有 joined 必帶陣列。 |
+| Redis | ROADMAP 原把它列在本階段。 | 延後到 Phase 6（跨節點共享狀態才需要）；本階段只在 Hub 預留擴展點。 |
+
 ## 限制、痛點與解法
 
 | 項目 | 限制 / 痛點 | 解決方案 |

@@ -45,6 +45,16 @@ B: setRemote(answer)
 | `public/client.js` | 前端 WebRTC 核心邏輯（getUserMedia / RTCPeerConnection / SDP / ICE） |
 | `public/style.css` | 樣式 |
 
+## 決策紀錄
+
+| 階段 | 痛點 | 決策 / 解法 |
+|------|------|------------|
+| 選信令傳輸 | 兩個瀏覽器要交換 SDP / ICE，但 WebRTC 規格不規定怎麼傳。 | 用最小的 `ws`（不引 socket.io），讓信令協議一目了然，專注理解 WebRTC 本身。 |
+| 選前端形式 | 想清楚看見 `getUserMedia` / `RTCPeerConnection` 的每一步。 | 用原生 JS、不上框架，避免框架抽象遮住底層流程（框架留到 Phase 3）。 |
+| 誰先發 offer | 兩邊同時 `createOffer` 會 glare 衝突。 | 規定「房間裡第二個進來的人當 caller」，單向發 offer。 |
+| ICE candidate 時序 | candidate 可能比對方的 SDP 先到，太早 `addIceCandidate` 會出錯。 | 在 `setRemoteDescription` 之前先把 candidate 排隊，設好後再補加。 |
+| NAT 穿透 | 完整 TURN 需要自架伺服器。 | 本機 / 區網用 Google 公開 STUN 即可，TURN 留到真的跨網路再加。 |
+
 ## 限制、痛點與解法
 
 | 項目 | 限制 / 痛點 | 解決方案 |
