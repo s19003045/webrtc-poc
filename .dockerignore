@@ -1,0 +1,9 @@
+# 讓 build context 保持精簡：相依與產物都在容器內重新安裝/建置
+**/node_modules
+**/dist
+.git
+**/*.log
+
+# Go 編譯產物
+phase-4/server/server
+phase-4/server/phase4-server
