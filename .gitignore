@@ -10,3 +10,7 @@ node_modules/
 
 # 前端建置輸出
 dist/
+
+# Go 編譯產物（用 go run / go build 還原即可）
+phase-4/server/phase4-server
+phase-4/server/server

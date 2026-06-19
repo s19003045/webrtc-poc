@@ -53,15 +53,15 @@
 
 ---
 
-## Phase 4 — Go 信令後端
+## Phase 4 — Go 信令後端 ✅（已完成）
 
-> 技術：Golang（`gorilla/websocket` 或 `coder/websocket`），前端沿用 Phase 3
+> 資料夾：`phase-4/`　技術：Golang（gorilla/websocket），前端沿用 Phase 3
 > 難度提升點：用 Go 的併發模型處理大量長連線
 
-- 用 Go 重寫信令伺服器：每條連線一個 goroutine、用 channel 做訊息分派
-- 房間註冊表（room registry）與成員生命週期管理
+- 用 Go 重寫信令伺服器：每條連線兩個 goroutine（讀/寫）、單一 Hub goroutine 用 channel 序列化房間狀態（免鎖）
+- 房間註冊表（room registry）與成員生命週期管理、ping/pong 心跳
 - 結構化、強型別的信令協議
-- 引入 **Redis** 共享房間狀態，為後續多節點鋪路
+- **Redis 延後到 Phase 6**：跨節點共享狀態是多節點擴展才需要的，單節點階段先預留擴展點即可
 - **產出**：目標後端棧定案，能穩定承載大量併發長連線
 
 ---
@@ -101,6 +101,6 @@
 | 1 ✅ | 1:1 基礎 | 原生 JS | Node | Mesh | 2 人 |
 | 2 ✅ | 多人 + 強化 | 原生 JS | Node | Mesh | 3~6 人 |
 | 3 ✅ | 前端現代化 | **React+TS** | Node | Mesh | 3~6 人 |
-| 4 | Go 後端 | React+TS | **Go** | Mesh | 數十條連線 |
+| 4 ✅ | Go 後端 | React+TS | **Go** | Mesh | 數十條連線 |
 | 5 | SFU 轉折 | React+TS | Go + Pion | **SFU** | 單房數十~上百 |
 | 6 | 規模化 | React+TS | Go 多節點 | SFU 叢集 | **數千人 / 多房** |
