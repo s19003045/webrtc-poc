@@ -1,0 +1,6 @@
+# router 的 build context 是 phase-6/，排除不需要的東西讓 context 精簡
+**/node_modules
+**/dist
+sfu/sfu
+router/router
+loadtest/

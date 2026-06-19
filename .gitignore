@@ -16,6 +16,9 @@ phase-4/server/phase4-server
 phase-4/server/server
 phase-5/server/phase5-server
 phase-5/server/server
+phase-6/sfu/sfu
+phase-6/router/router
+phase-6/loadtest/loadtest
 
 # Local Firebase web config for Phase 1.1
 phase-1.1/public/firebase-config.js

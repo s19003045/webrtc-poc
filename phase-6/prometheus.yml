@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: sfu-nodes
+    static_configs:
+      - targets: ['sfu-1:3000', 'sfu-2:3000']
+        labels:
+          app: webrtc-sfu

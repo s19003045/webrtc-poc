@@ -90,9 +90,9 @@
 
 ---
 
-## Phase 6 — 規模化與營運
+## Phase 6 — 規模化與營運 ✅（已完成）
 
-> 技術：多 SFU 節點 + Redis + 監控 + 壓測
+> 資料夾：`phase-6/`　技術：多 SFU 節點 + Router + Redis + JWT + Prometheus + 壓測
 > 目標：真正達成「數千人同時上線、多會議空間」
 
 - 水平擴展：多個 SFU 節點 + 房間路由 / 負載平衡（同房使用者導到同節點）
@@ -114,4 +114,4 @@
 | 3 ✅ | 前端現代化 | **React+TS** | Node | Mesh | 3~6 人 |
 | 4 ✅ | Go 後端 | React+TS | **Go** | Mesh | 數十條連線 |
 | 5 ✅ | SFU 轉折 | React+TS | Go + Pion | **SFU** | 單房數十~上百 |
-| 6 | 規模化 | React+TS | Go 多節點 | SFU 叢集 | **數千人 / 多房** |
+| 6 ✅ | 規模化 | React+TS | Go 多節點 + Router | SFU 叢集 + Redis | **數千人 / 多房** |

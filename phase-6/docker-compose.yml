@@ -1,0 +1,68 @@
+# Phase 6 — 多節點 SFU 叢集
+#
+#   redis      房間→節點對應、節點註冊（叢集的共享狀態）
+#   router     用 Redis 做房間親和性路由 + 簽發 JWT + 服務前端（http://localhost:8080）
+#   sfu-1/2    兩個 SFU 節點，各自有 WS 信令埠 + UDP 媒體埠，向 Redis 註冊
+#   prometheus 抓兩個節點的 /metrics（http://localhost:9090）
+#
+#   啟動：docker compose up -d --build
+#   壓測：cd loadtest && ROUTER_URL=http://localhost:8080 ROOMS=6 CLIENTS_PER_ROOM=4 go run .
+#   關閉：docker compose down
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  router:
+    build:
+      context: .
+      dockerfile: router/Dockerfile
+    ports:
+      - "8086:8080"
+    environment:
+      - REDIS_ADDR=redis:6379
+      - JWT_SECRET=phase6-demo-secret
+    depends_on: [redis]
+    restart: unless-stopped
+
+  sfu-1:
+    build:
+      context: ./sfu
+    ports:
+      - "8101:3000"       # WS 信令
+      - "7001:7001/udp"   # WebRTC 媒體
+    environment:
+      - NODE_ID=sfu-1
+      - NODE_ADDR=ws://localhost:8101/ws
+      - REDIS_ADDR=redis:6379
+      - JWT_SECRET=phase6-demo-secret
+      - UDP_PORT=7001
+      - NAT1TO1_IP=127.0.0.1
+    depends_on: [redis]
+    restart: unless-stopped
+
+  sfu-2:
+    build:
+      context: ./sfu
+    ports:
+      - "8102:3000"
+      - "7002:7002/udp"
+    environment:
+      - NODE_ID=sfu-2
+      - NODE_ADDR=ws://localhost:8102/ws
+      - REDIS_ADDR=redis:6379
+      - JWT_SECRET=phase6-demo-secret
+      - UDP_PORT=7002
+      - NAT1TO1_IP=127.0.0.1
+    depends_on: [redis]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on: [sfu-1, sfu-2]
+    restart: unless-stopped
