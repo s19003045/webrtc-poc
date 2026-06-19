@@ -41,9 +41,9 @@
 
 ---
 
-## Phase 3 — 前端現代化（React + TypeScript）
+## Phase 3 — 前端現代化（React + TypeScript）✅（已完成）
 
-> 技術：React + TypeScript + Vite，後端暫時沿用 Phase 2
+> 資料夾：`phase-3/`　技術：React + TypeScript + Vite，後端沿用 Phase 2
 > 難度提升點：把命令式的 WebRTC 流程包進 React 的宣告式狀態模型
 
 - 用 React + TS + Vite 重寫前端，元件化（`VideoGrid` / `Controls` / `ChatPanel` / `ParticipantList`）
@@ -100,7 +100,7 @@
 |-------|------|------|------|------|------|
 | 1 ✅ | 1:1 基礎 | 原生 JS | Node | Mesh | 2 人 |
 | 2 ✅ | 多人 + 強化 | 原生 JS | Node | Mesh | 3~6 人 |
-| 3 | 前端現代化 | **React+TS** | Node | Mesh | 3~5 人 |
+| 3 ✅ | 前端現代化 | **React+TS** | Node | Mesh | 3~6 人 |
 | 4 | Go 後端 | React+TS | **Go** | Mesh | 數十條連線 |
 | 5 | SFU 轉折 | React+TS | Go + Pion | **SFU** | 單房數十~上百 |
 | 6 | 規模化 | React+TS | Go 多節點 | SFU 叢集 | **數千人 / 多房** |

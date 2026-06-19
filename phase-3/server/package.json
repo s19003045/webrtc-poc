@@ -1,0 +1,14 @@
+{
+  "name": "webrtc-poc-phase3-server",
+  "version": "1.0.0",
+  "description": "Phase 3 信令伺服器（沿用 Phase 2 多人 mesh 協議）",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.1"
+  }
+}
