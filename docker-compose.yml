@@ -59,3 +59,23 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
+
+  # Phase 5 是 SFU：伺服器要跟 client 交換 RTP(UDP)，所以除了 HTTP/WS 的 TCP 埠，
+  # 還要發布一個「固定的 UDP 媒體埠」，並用 NAT1TO1_IP 告訴 Pion 對外要用的可達 IP。
+  # NAT1TO1_IP 預設 127.0.0.1（同機瀏覽器）；要從別台機器連，改成本機的區網 IP。
+  phase-5:
+    build:
+      context: .
+      dockerfile: phase-5/Dockerfile
+    ports:
+      - "8085:3000"          # HTTP + WebSocket（信令）
+      - "50000:50000/udp"    # WebRTC 媒體（ICE/RTP）
+    environment:
+      - UDP_PORT=50000
+      - NAT1TO1_IP=127.0.0.1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3

@@ -14,3 +14,5 @@ dist/
 # Go 編譯產物（用 go run / go build 還原即可）
 phase-4/server/phase4-server
 phase-4/server/server
+phase-5/server/phase5-server
+phase-5/server/server

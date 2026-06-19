@@ -66,9 +66,9 @@
 
 ---
 
-## Phase 5 — SFU 架構（核心轉折，用 Pion）
+## Phase 5 — SFU 架構（核心轉折，用 Pion）✅（已完成）
 
-> 技術：Go + [pion/webrtc](https://github.com/pion/webrtc)
+> 資料夾：`phase-5/`　技術：Go + [pion/webrtc](https://github.com/pion/webrtc)
 > 難度提升點：伺服器本身要參與 WebRTC，收發與轉發媒體
 
 - 用 Pion 在 Go 建一個最小 SFU：每個 client 上傳一路 → 伺服器轉發給房內其他人
@@ -102,5 +102,5 @@
 | 2 ✅ | 多人 + 強化 | 原生 JS | Node | Mesh | 3~6 人 |
 | 3 ✅ | 前端現代化 | **React+TS** | Node | Mesh | 3~6 人 |
 | 4 ✅ | Go 後端 | React+TS | **Go** | Mesh | 數十條連線 |
-| 5 | SFU 轉折 | React+TS | Go + Pion | **SFU** | 單房數十~上百 |
+| 5 ✅ | SFU 轉折 | React+TS | Go + Pion | **SFU** | 單房數十~上百 |
 | 6 | 規模化 | React+TS | Go 多節點 | SFU 叢集 | **數千人 / 多房** |
