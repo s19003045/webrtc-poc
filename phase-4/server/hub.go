@@ -39,6 +39,7 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case c := <-h.unregister:
+			log.Printf("[LEAVE-REQ] id=%s room=%s", short(c.id), c.room)
 			h.handleLeave(c)
 		case in := <-h.inbound:
 			h.handleMessage(in.client, in.data)
@@ -49,8 +50,11 @@ func (h *Hub) Run() {
 func (h *Hub) handleMessage(c *Client, data []byte) {
 	var msg Inbound
 	if err := json.Unmarshal(data, &msg); err != nil {
+		log.Printf("[IN-INVALID] from=%s err=%v", short(c.id), err)
 		return // 不是合法 JSON 就忽略
 	}
+	log.Printf("[IN] type=%s from=%s room_msg=%s room_cur=%s to=%s", msg.Type, short(c.id), msg.Room, c.room, short(msg.To))
+
 	switch msg.Type {
 	case "join":
 		h.handleJoin(c, msg.Room)
@@ -69,6 +73,7 @@ func (h *Hub) handleJoin(c *Client, room string) {
 		h.rooms[room] = members
 	}
 	if len(members) >= maxPerRoom {
+		log.Printf("[JOIN-FULL] room=%s id=%s", room, short(c.id))
 		h.sendJSON(c, Outbound{Type: "full"})
 		return
 	}
@@ -82,24 +87,33 @@ func (h *Hub) handleJoin(c *Client, room string) {
 	members[c.id] = c
 	c.room = room
 
+	log.Printf("[JOIN-OK] room=%s id=%s members=%d", room, short(c.id), len(members))
 	h.sendJSON(c, Joined{Type: "joined", ID: c.id, Peers: peers})
 	for id, peer := range members {
 		if id != c.id {
+			log.Printf("[PEER-JOINED] room=%s from=%s to=%s", room, short(c.id), short(id))
 			h.sendJSON(peer, Outbound{Type: "peer-joined", ID: c.id})
 		}
 	}
-	log.Printf("join room=%s id=%s (房內 %d 人)", room, short(c.id), len(members))
 }
 
 // handleSignal 把信令點對點轉給房內指定的 peer（不解讀內容）。
 func (h *Hub) handleSignal(c *Client, msg Inbound) {
 	members := h.rooms[c.room]
-	if members == nil || msg.To == "" {
+	if members == nil {
+		log.Printf("[SIG-SKIP] from=%s reason=no-room room=%s", short(c.id), c.room)
 		return
 	}
+	if msg.To == "" {
+		log.Printf("[SIG-SKIP] from=%s reason=empty-to room=%s", short(c.id), c.room)
+		return
+	}
+	log.Printf("[SIG-IN] room=%s from=%s to=%s", c.room, short(c.id), short(msg.To))
 	if target := members[msg.To]; target != nil {
 		h.sendJSON(target, Outbound{Type: "signal", From: c.id, Data: msg.Data})
+		return
 	}
+	log.Printf("[SIG-MISS] room=%s from=%s to=%s", c.room, short(c.id), short(msg.To))
 }
 
 // handleLeave 在連線結束時清理，並通知房內其他人。每個 client 只會被呼叫一次。
@@ -110,10 +124,11 @@ func (h *Hub) handleLeave(c *Client) {
 			for _, peer := range members {
 				h.sendJSON(peer, Outbound{Type: "peer-left", ID: c.id})
 			}
+			leftMembers := len(members)
 			if len(members) == 0 {
 				delete(h.rooms, c.room)
 			}
-			log.Printf("leave room=%s id=%s", c.room, short(c.id))
+			log.Printf("[LEAVE-OK] room=%s id=%s members=%d", c.room, short(c.id), leftMembers)
 		}
 	}
 	// unregister 每個 client 僅送一次，故此處 close 一定安全；writePump 會因此收工
