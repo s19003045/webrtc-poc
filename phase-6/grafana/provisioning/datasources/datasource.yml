@@ -1,0 +1,11 @@
+# 自動掛上 Prometheus 資料來源（固定 uid，dashboard 用這個 uid 綁定）
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false

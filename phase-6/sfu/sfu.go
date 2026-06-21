@@ -89,6 +89,37 @@ func (s *SFU) snapshot() (names []string, peers, tracks int) {
 	return names, peers, tracks
 }
 
+// peerRef：給指標收集用的單一連線快照（房間名 + 短 id + 它的 PeerConnection）。
+type peerRef struct {
+	room string
+	id   string
+	pc   *webrtc.PeerConnection
+}
+
+// peerRefs 列舉目前所有房間的所有連線，供 per-peer stats 收集。
+// 鎖序與 snapshot 一致：先在 s.lock 下複製 rooms，再逐一鎖各 Room。
+// 回傳後在房鎖外呼叫 pc.GetStats()（Pion 的 GetStats 可安全併發呼叫）。
+func (s *SFU) peerRefs() []peerRef {
+	s.lock.Lock()
+	snap := make([]*Room, 0, len(s.rooms))
+	names := make([]string, 0, len(s.rooms))
+	for name, r := range s.rooms {
+		snap = append(snap, r)
+		names = append(names, name)
+	}
+	s.lock.Unlock()
+
+	var refs []peerRef
+	for i, r := range snap {
+		r.lock.Lock()
+		for _, p := range r.peers {
+			refs = append(refs, peerRef{room: names[i], id: short(p.id), pc: p.pc})
+		}
+		r.lock.Unlock()
+	}
+	return refs
+}
+
 // addTrack：某人上傳了一條 track → 建立可轉發的 local track，登記後通知大家重新協商。
 func (r *Room) addTrack(t *webrtc.TrackRemote) *webrtc.TrackLocalStaticRTP {
 	r.lock.Lock()

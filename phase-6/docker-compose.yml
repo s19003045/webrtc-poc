@@ -4,6 +4,7 @@
 #   router     用 Redis 做房間親和性路由 + 簽發 JWT + 服務前端（http://localhost:8080）
 #   sfu-1/2    兩個 SFU 節點，各自有 WS 信令埠 + UDP 媒體埠，向 Redis 註冊
 #   prometheus 抓兩個節點的 /metrics（http://localhost:9090）
+#   grafana    叢集概況 + 逐連線品質儀表板（http://localhost:3030）
 #
 #   啟動：docker compose up -d --build
 #   壓測：cd loadtest && ROUTER_URL=http://localhost:8080 ROOMS=6 CLIENTS_PER_ROOM=4 go run .
@@ -65,4 +66,19 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on: [sfu-1, sfu-2]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3030:3000"   # 儀表板 UI（http://localhost:3030）
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true      # 免登入即可看（POC 方便）
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro  # 自動掛 datasource + dashboard provider
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro   # dashboard JSON
+    depends_on: [prometheus]
     restart: unless-stopped

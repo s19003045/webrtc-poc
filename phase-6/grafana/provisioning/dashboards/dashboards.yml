@@ -1,0 +1,11 @@
+# 從檔案載入 dashboard（放在 /var/lib/grafana/dashboards）
+apiVersion: 1
+
+providers:
+  - name: SFU
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

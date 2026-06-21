@@ -17,17 +17,18 @@
   瀏覽器 ─ws信令/UDP媒體─▶ SFU node-1 ─註冊/回報負載─┤
   瀏覽器 ─ws信令/UDP媒體─▶ SFU node-2 ─註冊/回報負載─┘
                              │
-                        /metrics → Prometheus
+                        /metrics → Prometheus → Grafana
 ```
 
 | 元件 | 資料夾 | 職責 |
 |------|--------|------|
 | **Router** | `router/` | 用 Redis 做房間親和性路由（既有房間→原節點；新房間→負載最低、tie-break 用 hash 分散）、簽發入會 JWT、服務前端 |
-| **SFU 節點** | `sfu/` | Phase 5 SFU + 向 Redis 註冊/心跳/回報負載 + 驗 JWT + Prometheus `/metrics`。可跑多個 |
+| **SFU 節點** | `sfu/` | Phase 5 SFU + 向 Redis 註冊/心跳/回報負載 + 驗 JWT + Prometheus `/metrics`（節點層級 + 逐連線品質）。可跑多個 |
 | **Redis** | — | 叢集共享狀態：`node:{id}→{addr,load}`（EX 15）、`room:{id}→node`（EX 60，節點刷新） |
 | **前端** | `client/` | Phase 5 前端 + 先 `GET /api/route` 再連到指派的節點（帶 token） |
 | **壓測** | `loadtest/` | 用真實 Pion client 模擬大量使用者，驗證分散與轉發 |
-| **Prometheus** | — | 抓各節點 `/metrics`（房間數 / 連線數 / track 數） |
+| **Prometheus** | — | 抓各節點 `/metrics`（房間/連線/track 數 + 每連線 bitrate/丟包/RTT/jitter） |
+| **Grafana** | `grafana/` | 自動 provision Prometheus datasource 與儀表板：叢集概況 + 逐連線品質視覺化 |
 
 ## 啟動
 
@@ -40,6 +41,7 @@ docker compose -f docker-compose.yml up -d --build
 | 前端（經 Router） | http://localhost:8086 |
 | SFU 節點 1 / 2 | ws://localhost:8101/ws（媒體 UDP 7001）、:8102（7002） |
 | Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3030（免登入，dashboard「SFU — 叢集與逐連線品質」） |
 
 開多個分頁、相同房間名稱加入——畫面上方會顯示這個房間被指派到哪個節點。不同房間會分散到不同節點。
 
@@ -52,12 +54,42 @@ ROUTER_URL=http://localhost:8086 ROOMS=6 CLIENTS_PER_ROOM=4 go run .
 
 會啟動 `ROOMS × CLIENTS_PER_ROOM` 個真實 Pion client，經 Router 路由、上傳並驗證每人都收到同房其他人的 track，最後印出「房間在各節點的分布」。**實測 6 房 × 4 人 = 24 client 全數收齊、房間分散到兩個節點。**
 
+## 逐連線可觀測性（per-peer metrics）
+
+只看節點層級的「房間/連線/track 數」無法回答「**誰**的畫面在掉、是上行還下行、是丟包還是 RTT 飆高」。
+每個 SFU 節點每 5 秒對每條連線呼叫 Pion 的 `pc.GetStats()`，把逐連線品質指標以 `node/room/peer`
+為標籤輸出到 `/metrics`，再由 Grafana 視覺化。
+
+| 指標 | 來源（WebRTC stats） | 意義 |
+|------|----------------------|------|
+| `sfu_peer_uplink_bitrate_bps` | candidate-pair `bytesReceived` 差分 | 上行頻寬（client→SFU，傳輸層） |
+| `sfu_peer_downlink_bitrate_bps` | candidate-pair `bytesSent` 差分 | 下行頻寬（SFU→client，傳輸層） |
+| `sfu_peer_rtt_seconds` | candidate-pair `currentRoundTripTime` | 往返時間（ICE/STUN 量測） |
+| `sfu_peer_uplink_packets_lost` | inbound-rtp `packetsLost` | 上行累積丟包（SFU 端觀察） |
+| `sfu_peer_uplink_jitter_seconds` | inbound-rtp `jitter` | 上行抖動 |
+
+> **為什麼 bitrate / RTT 取自 candidate-pair 而非 outbound-rtp？** Pion v4 的 `pc.GetStats()`
+> 只收集 receiver（inbound）端，**不收集 sender**，所以 `outbound-rtp` 與 `remote-inbound-rtp`
+> 根本不會出現在報告裡——下行 bytes 與「RTCP RR 回報的 RTT/丟包」都拿不到。改用選定的 ICE
+> candidate-pair：`bytesSent/bytesReceived` 是這條連線傳輸層的實際收發量（涵蓋它轉發的所有 track），
+> `currentRoundTripTime` 是 STUN 直接量到的 RTT，不依賴對端的 RTCP Receiver Report。
+> 下行的「client 端感知丟包率」在此 Pion 版本伺服器端取不到，故未輸出。
+>
+> **方向性**：上/下行都從同一條 candidate-pair 量到；RTT 在 ICE 連通並完成首次 STUN 檢查後才有值。
+> **基數控制**：per-peer 是高基數且短命的標籤；連線一離開，收集器會主動刪掉該 peer 的所有 series，
+> 避免 Prometheus 的 series 無上限累積。
+
+Grafana（http://localhost:3030，免登入）開「**SFU — 叢集與逐連線品質**」儀表板：上排是全叢集
+房間/連線/track 概況，下面是每條連線的上/下行頻寬、RTT、上行 jitter 與累積丟包，外加一張
+「每房下行總頻寬」凸顯單房轉發成本（∝ N²）。
+
 ## 驗證（已實測通過）
 
 - **多節點轉發**：壓測 24/24 client 收齊他人 track。
 - **房間親和性 + 分散**：同房永遠同節點；多房分散到 sfu-1 / sfu-2。
 - **JWT 強制**：直連節點但不帶 token → 被拒（`unauthorized`）。
-- **可觀測性**：`curl localhost:8101/metrics` 有 `sfu_rooms/peers/tracks`；Prometheus 兩個節點 target 皆 `up`。
+- **可觀測性（節點層級）**：`curl localhost:8101/metrics` 有 `sfu_rooms/peers/tracks`；Prometheus 兩個節點 target 皆 `up`。
+- **可觀測性（逐連線）**：壓測（4 房 × 3 人）中量到每條連線的 `sfu_peer_*`，數值物理合理——上行 ≈ 43 kbps、**下行 ≈ 82 kbps（3 人房每人收另外 2 人 ≈ 2× 上行，符合 SFU 轉發模型）**、RTT ≈ 0.2–0.9 ms（localhost STUN）；連線結束後 series 被收集器清除（無洩漏）。Grafana datasource 與 dashboard 皆自動 provision 成功。
 
 ## 決策紀錄
 
@@ -78,7 +110,7 @@ ROUTER_URL=http://localhost:8086 ROOMS=6 CLIENTS_PER_ROOM=4 go run .
 | 負載資訊延遲 | 節點負載每 5 秒才回報，瞬間大量新房間的分配不夠即時。 | hash tie-break 緩解；更精準可在 Router 指派時樂觀累加 pending load，或改用一致性雜湊。 |
 | 媒體 NAT | 每個節點都要對外發布固定 UDP 埠 + `NAT1TO1_IP`；跨機要填區網/公網 IP。 | 已用 `UDP_PORT` + `NAT1TO1_IP`；正式環境配合 TURN 叢集處理嚴格 NAT。 |
 | TURN | 嚴格 NAT / 企業防火牆下，純 STUN 仍可能連不上。 | 正式部署需自架 coturn 叢集（本階段未含）。 |
-| 觀測深度 | 目前只有節點層級的房間/連線/track 數，沒有每連線的丟包、RTT、頻寬。 | 接 Pion 的 stats、輸出更細的 per-peer 指標，並用 Grafana 視覺化（本階段只到 Prometheus 抓取）。 |
+| 觀測深度 | ~~只有節點層級的房間/連線/track 數，沒有每連線的丟包、RTT、頻寬。~~ | ✅ 已補：節點用 `pc.GetStats()` 輸出**逐連線**上/下行 bitrate、丟包、RTT、jitter，並加 Grafana 儀表板視覺化（見「逐連線可觀測性」）。仍缺：simulcast 各 layer 的細分、告警規則。 |
 | 安全與營運 | JWT secret 寫死於 compose、無房間 ACL、無錄影、無自動擴縮。 | 正式環境用 secret 管理、房間權限、雲端錄影、依負載自動增減節點。 |
 | 自建 vs 採用 | 自建叢集要長期維護路由、擴縮、容錯、媒體優化。 | **決策點**：原理已吃透；真要上數千人正式服務，建議直接採用 [LiveKit](https://livekit.io)（Go、基於 Pion、內建多節點/錄影/SDK）。 |
 
@@ -90,5 +122,5 @@ ROUTER_URL=http://localhost:8086 ROOMS=6 CLIENTS_PER_ROOM=4 go run .
 | 房間落點 | 都在同一程序 | Redis 房間親和性路由，分散到多節點 |
 | 共享狀態 | 程序內記憶體 | Redis（節點註冊 + room→node） |
 | 認證 | 無 | 入會 JWT |
-| 觀測 | 無 | Prometheus `/metrics` |
+| 觀測 | 無 | Prometheus `/metrics`（節點層級 + **逐連線** bitrate/丟包/RTT/jitter）+ Grafana 儀表板 |
 | 規模 | 單房數十~上百 | **多房分散到多節點 → 數千人 / 多會議空間** |

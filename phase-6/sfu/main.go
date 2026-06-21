@@ -61,12 +61,14 @@ func main() {
 		}
 	}()
 
-	// 週期性更新 Prometheus 指標
+	// 週期性更新 Prometheus 指標：節點層級 + 逐連線品質（bitrate/丟包/RTT/jitter）
 	go func() {
+		collector := newPeerStatsCollector(nodeID)
 		t := time.NewTicker(5 * time.Second)
 		defer t.Stop()
 		for range t.C {
 			updateMetrics(sfu)
+			collector.collect(sfu)
 		}
 	}()
 
