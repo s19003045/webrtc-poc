@@ -26,6 +26,7 @@
 - `ROADMAP.md`：整體演進脈絡與 phase 摘要
 - `DOCKER.md`：Phase 1~5 的 Docker Compose 使用方式
 - `docker-compose.yml`：根目錄的多 phase container 啟動設定
+- `docs/AI-程式語言學習協作指南.md`：提供給 AI agent 的互動式學習指引，可延續 Go 或其他程式語言的教學方式
 
 ## 為什麼要分 phase
 
